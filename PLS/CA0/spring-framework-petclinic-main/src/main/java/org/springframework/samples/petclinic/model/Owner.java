@@ -52,6 +52,10 @@ public class Owner extends Person {
     @NotEmpty
     private String city;
 
+    @Column(name = "nif")
+    @NotEmpty
+    private String nif;
+
     @Column(name = "telephone")
     @NotEmpty
     @Digits(fraction = 0, integer = 10)
@@ -77,9 +81,19 @@ public class Owner extends Person {
         this.city = city;
     }
 
+    public String getNif() {
+        return this.nif;
+    }
+
+    public void setNif(String nif) {
+    this.nif = nif;
+    }
+
     public String getTelephone() {
         return this.telephone;
     }
+
+    
 
     public void setTelephone(String telephone) {
         this.telephone = telephone;
@@ -148,6 +162,7 @@ public class Owner extends Person {
             .append("address", this.address)
             .append("city", this.city)
             .append("telephone", this.telephone)
+            .append("nif", this.nif)
             .toString();
     }
 }

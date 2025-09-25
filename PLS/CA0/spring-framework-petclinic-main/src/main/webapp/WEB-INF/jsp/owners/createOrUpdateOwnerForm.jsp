@@ -17,6 +17,7 @@
             <petclinic:inputField label="Address" name="address"/>
             <petclinic:inputField label="City" name="city"/>
             <petclinic:inputField label="Telephone" name="telephone"/>
+            <petclinic:inputField label="Nif" name="nif"/>
         </div>
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">

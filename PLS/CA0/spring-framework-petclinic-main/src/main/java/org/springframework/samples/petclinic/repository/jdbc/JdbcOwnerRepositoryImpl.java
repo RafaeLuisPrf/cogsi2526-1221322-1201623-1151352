@@ -72,7 +72,7 @@ public class JdbcOwnerRepositoryImpl implements OwnerRepository {
     @Override
     public Collection<Owner> findByLastName(String lastName) {
         List<Owner> owners = this.jdbcClient.sql("""
-                SELECT id, first_name, last_name, address, city, telephone
+                SELECT id, first_name, last_name, address, city, telephone, nif
                 FROM owners
                 WHERE last_name like :lastName
                 """)
@@ -92,7 +92,7 @@ public class JdbcOwnerRepositoryImpl implements OwnerRepository {
         Owner owner;
         try {
             owner = this.jdbcClient.sql("""
-                    SELECT id, first_name, last_name, address, city, telephone
+                    SELECT id, first_name, last_name, address, city, telephone, nif
                     FROM owners WHERE id = :id
                     """)
                 .param("id", id)
@@ -129,7 +129,7 @@ public class JdbcOwnerRepositoryImpl implements OwnerRepository {
         } else {
             this.jdbcClient.sql("""
                     UPDATE owners
-                    SET first_name=:firstName, last_name=:lastName, address=:address, city=:city, telephone=:telephone
+                    SET first_name=:firstName, last_name=:lastName, address=:address, city=:city, telephone=:telephone, nif=:nif
                     WHERE id=:id
                     """)
                 .paramSource(parameterSource)
