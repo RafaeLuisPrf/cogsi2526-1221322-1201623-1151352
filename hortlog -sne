@@ -1,0 +1,67 @@
+[33mcommit a8911d4c6c8995d7276a2cdbf74de2743f28c7ae[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Sun Sep 28 18:54:39 2025 +0100
+
+    Revert "Test file"
+    
+    This reverts commit 82ae125fa4fd68b09164318bcccc9b8c6381a1e2.
+
+[33mcommit 82ae125fa4fd68b09164318bcccc9b8c6381a1e2[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Sun Sep 28 18:54:13 2025 +0100
+
+    Test file
+
+[33mcommit 0fb8737e1ee0c341ddfe47684c298798fb581487[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Sun Sep 28 18:53:41 2025 +0100
+
+    ReadMe in CA1 update
+
+[33mcommit 2e7fb00699b63b69556911820a26bc385fece66f[m[33m ([m[1;33mtag: [m[1;33m1.2.0[m[33m)[m
+Author: RafaeLuisPrf <1221322@isep.ipp.pt>
+Date:   Sun Sep 28 18:26:12 2025 +0100
+
+    Vet registration number added
+
+[33mcommit b9682b2784df4a8c39c6dd8c47d1869929e4400c[m[33m ([m[1;33mtag: [m[1;33m1.1.0[m[33m)[m
+Author: RafaeLuisPrf <1221322@isep.ipp.pt>
+Date:   Sun Sep 28 00:42:16 2025 +0100
+
+    Vet app copied to CA1
+
+[33mcommit db9b642b2af33ae14c58b3c4b11a6e03e4c78624[m
+Author: RafaeLuisPrf <1221322@isep.ipp.pt>
+Date:   Sat Sep 27 17:29:01 2025 +0100
+
+    CA1 readme update / Analysis and requirements
+
+[33mcommit b2b938e32a5889b2ecff06731bff013048ecde9d[m
+Author: RafaeLuisPrf <1221322@isep.ipp.pt>
+Date:   Thu Sep 25 23:07:23 2025 +0100
+
+    Nif added
+
+[33mcommit 112e9fef0a21df3bc9a18ecd99b95932eea14283[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Thu Sep 25 22:04:31 2025 +0100
+
+    -petclinic base repo no changes
+
+[33mcommit 936cb8405eec6499c091c4151bfd93c9c5fde4aa[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Wed Sep 24 23:21:25 2025 +0100
+
+    ReadMe Example for CA1
+
+[33mcommit 377451f2fa16f2c3fccf56bd1c5babbc8d11b480[m
+Author: RafaeLuisPrf <rafael.luis.prf@gmail.com>
+Date:   Wed Sep 24 22:32:32 2025 +0100
+
+    Add .gitignore to ignore all git directories
+
+[33mcommit 4cec718efb05256039182f9ac842a5865e24e55f[m
+Author: rafael luis <rafael.luis.prf@gmail.com>
+Date:   Wed Sep 24 22:19:29 2025 +0100
+
+    first commit
