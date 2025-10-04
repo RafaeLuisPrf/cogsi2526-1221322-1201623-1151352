@@ -1,9 +1,9 @@
-INSERT INTO vets VALUES (default, 'James', 'Carter', '111111111');
-INSERT INTO vets VALUES (default, 'Helen', 'Leary', '222222222');
-INSERT INTO vets VALUES (default, 'Linda', 'Douglas', '333333333');
-INSERT INTO vets VALUES (default, 'Rafael', 'Ortega', '444444444');
-INSERT INTO vets VALUES (default, 'Henry', 'Stevens', '555555555');
-INSERT INTO vets VALUES (default, 'Sharon', 'Jenkins', '666666666');
+INSERT INTO vets VALUES (default, 'James', 'Carter', '111111111', 'james.carter@example.com');
+INSERT INTO vets VALUES (default, 'Helen', 'Leary', '222222222', 'helen.leary@example.com');
+INSERT INTO vets VALUES (default, 'Linda', 'Douglas', '333333333', 'linda.douglas@example.com');
+INSERT INTO vets VALUES (default, 'Rafael', 'Ortega', '444444444', 'rafael.ortega@example.com');
+INSERT INTO vets VALUES (default, 'Henry', 'Stevens', '555555555', 'henry.stevens@example.com');
+INSERT INTO vets VALUES (default, 'Sharon', 'Jenkins', '666666666', 'sharon.jenkins@example.com');
 
 INSERT INTO specialties VALUES (default, 'radiology');
 INSERT INTO specialties VALUES (default, 'surgery');

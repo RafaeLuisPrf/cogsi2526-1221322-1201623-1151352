@@ -57,6 +57,10 @@ public class Vet extends Person {
     @NotEmpty
     private String registration_number;
 
+    @Column(name = "email")
+    @NotEmpty
+    private String email;
+
 
     protected Set<Specialty> getSpecialtiesInternal() {
         if (this.specialties == null) {
@@ -90,6 +94,14 @@ public class Vet extends Person {
 
     public void setRegistration_number(String registration_number) {
         this.registration_number = registration_number;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
 
