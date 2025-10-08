@@ -12,7 +12,7 @@ package basic_demo;
  */
 public class App {
     public String getGreeting() {
-        return "\nWelcome to \"Multi-User Chat Application\"!\n";
+        return "\nWelcome to a \"Multi-User Chat Application\"!\n";
     }
 
     public static void main(String[] args) {
