@@ -64,3 +64,9 @@ task runServer{
         }
     }
 }
+
+task copy(type: Copy){
+    from 'src/'
+    into 'backupFolder/'
+    
+}
