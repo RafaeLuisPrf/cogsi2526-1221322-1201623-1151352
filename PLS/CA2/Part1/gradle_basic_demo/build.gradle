@@ -25,10 +25,13 @@ dependencies {
     // Use Apache Log4J for logging
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.2'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'	
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
  
 jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE // allow duplicates
+
 
     manifest {
         attributes "Main-Class": "basic_demo.App"
@@ -63,4 +66,16 @@ task runServer{
             args '59001'
         }
     }
+
+
+tasks.named('test',Test){
+	useJUnitPlatform()
+	
+	maxHeapSize = '1G'
+
+	testLogging {
+		events "passed" 
+	}
+}
+
 }
