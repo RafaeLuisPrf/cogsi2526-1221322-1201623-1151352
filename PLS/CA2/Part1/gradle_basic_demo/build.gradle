@@ -81,6 +81,13 @@ tasks.named('test',Test){
 
 task copy(type: Copy){
     from 'src/'
-    into 'backupFolder/'
+    into 'backup/srcBackup'
     
+}
+
+task zip(type: Zip){
+    dependsOn copy
+    from 'backup/srcBackup/'
+    destinationDirectory = file("backup/")
+    archiveFileName = 'srcBackup.zip'
 }
