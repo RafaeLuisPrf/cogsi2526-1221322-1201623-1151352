@@ -6,7 +6,7 @@ plugins {
 // Configure Java toolchain
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) 
+        languageVersion = JavaLanguageVersion.of(17) // Use Java 17
     }
 }
 
@@ -90,4 +90,17 @@ task zip(type: Zip){
     from 'backup/srcBackup/'
     destinationDirectory = file("backup/")
     archiveFileName = 'srcBackup.zip'
+}
+
+
+tasks.withType(JavaCompile).configureEach {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+tasks.register('testsOn17', Test) {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
