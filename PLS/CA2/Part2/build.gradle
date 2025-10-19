@@ -89,3 +89,34 @@ task javadocZip(type: Zip) {
     archiveFileName = "${project.name}-javadoc-${project.version}.zip"
     destinationDirectory = file("$buildDir/javadoc") 
 }
+
+sourceSets {
+    integrationTest {
+        java {
+            srcDir 'src/integrationTest/java'
+        }
+        resources {
+            srcDir 'src/integrationTest/resources'
+        }
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath 
+    useJUnitPlatform()
+}
+
+check.dependsOn integrationTest
