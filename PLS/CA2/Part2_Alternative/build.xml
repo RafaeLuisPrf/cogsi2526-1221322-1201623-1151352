@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="spring-boot-ant" default="run" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
 
+
 	<!-- === Project properties === -->
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build" />
 	<property name="classes.dir" value="${build.dir}/classes" />
 	<property name="jar.dir" value="${build.dir}/jar" />
 	<property name="lib.dir" value="lib" />
+
+	<property name="project.version" value="1.0.0" />
+	<tstamp>
+		<format property="build.timestamp" pattern="yyyyMMdd-HHmmss" />
+	</tstamp>
 
 	<!-- === Load Ivy === -->
 	<taskdef
@@ -28,6 +34,10 @@
 	<!-- === Clean === -->
 	<target name="clean">
 		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="cleanSpecificDirectory">
+		<delete dir="${build.dir}/deployment/dev" />
 	</target>
 
 	<!-- === Compile === -->
@@ -59,6 +69,39 @@
 				<fileset dir="${lib.dir}" includes="*.jar" />
 			</classpath>
 		</java>
+	</target>
+
+	<!-- === copy tasks === -->
+	<target name="copyToDev" depends="jar">
+		<copy todir="${build.dir}/deployment/dev">
+			<fileset dir="${jar.dir}" includes="App.jar" />
+			<fileset dir="${lib.dir}" includes="*.jar" />
+		</copy>
+	</target>
+
+	<target name="subset_copyToDev" depends="jar">
+		<!-- Retrieve only runtime dependencies -->
+		<ivy:retrieve pattern="build/deployment/dev/lib/[artifact]-[revision].[ext]" conf="runtime" />
+	</target>
+
+	<target name="confFiles">
+
+		<copy todir="build/deployment/dev/config">
+			<fileset dir="src/main/resources" includes="*.properties" />
+			<filterchain>
+				<replacetokens>
+					<token key="version" value="${project.version}" />
+					<token key="timestamp" value="${build.timestamp}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+	</target>
+
+
+	<!-- === Deploy Test === -->
+	<target name="deployToDev"
+		depends="cleanSpecificDirectory, copyToDev, subset_copyToDev, confFiles">
 	</target>
 
 
