@@ -4,6 +4,7 @@
  * This is a general purpose Gradle build.
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/9.1.0/samples
  */
+ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'java'
@@ -33,4 +34,39 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+def deploymentDir = file('build/deployment/dev')
+
+
+task cleanDeploymentDirectory(type: Delete) {
+    delete fileTree(deploymentDir)
+}
+
+task moveMainArtifact(type: Copy) {
+    dependsOn bootJar
+    from bootJar.archiveFile
+    into deploymentDir
+    mustRunAfter cleanDeploymentDirectory
+}
+
+task placeExternalDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into "${deploymentDir}/lib"
+    mustRunAfter moveMainArtifact
+}
+
+task replaceTokens(type: Copy) {
+    from 'src/main/resources'
+    include '*.properties'
+    into deploymentDir
+    filter(ReplaceTokens, tokens: [
+        project_version: project.version,
+        build_timestamp: new Date().format("yyyy-MM-dd_HH:mm:ss")
+    ])
+    mustRunAfter placeExternalDependencies
+}
+
+task deployToDev {
+    dependsOn cleanDeploymentDirectory, moveMainArtifact, placeExternalDependencies, replaceTokens
 }
