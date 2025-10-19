@@ -23,6 +23,9 @@ java {
 
 application {
     mainClass = 'payroll.PayrollApplication' 
+    startScripts {
+        classpath = files('lib/*')
+    }
 }
 
 repositories {
@@ -79,8 +82,11 @@ task deployToDev {
 task runUsingDist(type: Exec) {
     dependsOn installDist
     workingDir "$buildDir/install/${project.name}/bin"
-    def executableScript = System.properties['os.name'].toLowerCase().contains('windows') ? "${project.name}.bat" : "./${project.name}"
-    commandLine = executableScript
+    if (System.properties['os.name'].toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', "${project.name}.bat"
+    } else {
+        commandLine './' + project.name
+    }
 }
 
 task javadocZip(type: Zip) {
