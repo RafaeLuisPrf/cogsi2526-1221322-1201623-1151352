@@ -7,6 +7,7 @@
 	<property name="build.dir" value="build" />
 	<property name="classes.dir" value="${build.dir}/classes" />
 	<property name="jar.dir" value="${build.dir}/jar" />
+	<property name="doc.dir" value="${build.dir}/doc" />
 	<property name="lib.dir" value="lib" />
 
 	<property name="project.version" value="1.0.0" />
@@ -14,7 +15,6 @@
 		<format property="build.timestamp" pattern="yyyyMMdd-HHmmss" />
 	</tstamp>
 
-	<!-- === Load Ivy === -->
 	<taskdef
 		resource="org/apache/ivy/ant/antlib.xml"
 		uri="antlib:org.apache.ivy.ant">
@@ -23,15 +23,14 @@
 		</classpath>
 	</taskdef>
 
-	<!-- === Resolve Dependencies === -->
+
 	<target name="resolve">
 		<ivy:settings file="ivysettings.xml" />
 		<ivy:resolve file="ivy.xml" />
-		<!-- Download dependencies into lib folder -->
 		<ivy:retrieve pattern="${lib.dir}/[artifact]-[revision].[ext]" />
 	</target>
 
-	<!-- === Clean === -->
+
 	<target name="clean">
 		<delete dir="${build.dir}" />
 	</target>
@@ -40,7 +39,7 @@
 		<delete dir="${build.dir}/deployment/dev" />
 	</target>
 
-	<!-- === Compile === -->
+
 	<target name="compile" depends="resolve">
 		<mkdir dir="${classes.dir}" />
 		<javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false">
@@ -50,7 +49,7 @@
 		</javac>
 	</target>
 
-	<!-- === Package === -->
+
 	<target name="jar" depends="compile">
 		<mkdir dir="${jar.dir}" />
 		<jar destfile="${jar.dir}/App.jar" basedir="${classes.dir}">
@@ -61,7 +60,6 @@
 	</target>
 
 
-	<!-- === Run Application === -->
 	<target name="run" depends="compile">
 		<java classname="payroll.PayrollApplication" fork="true">
 			<classpath>
@@ -71,7 +69,7 @@
 		</java>
 	</target>
 
-	<!-- === copy tasks === -->
+
 	<target name="copyToDev" depends="jar">
 		<copy todir="${build.dir}/deployment/dev">
 			<fileset dir="${jar.dir}" includes="App.jar" />
@@ -80,7 +78,7 @@
 	</target>
 
 	<target name="subset_copyToDev" depends="jar">
-		<!-- Retrieve only runtime dependencies -->
+
 		<ivy:retrieve pattern="build/deployment/dev/lib/[artifact]-[revision].[ext]" conf="runtime" />
 	</target>
 
@@ -99,7 +97,6 @@
 	</target>
 
 
-	<!-- === Deploy Test === -->
 	<target name="deployToDev"
 		depends="cleanSpecificDirectory, copyToDev, subset_copyToDev, confFiles">
 	</target>
@@ -118,7 +115,7 @@
 			<fileset dir="${lib.dir}" includes="*.jar" />
 		</copy>
 
-		<!-- Copia arquivos de configuração -->
+		<!-- arquivos de configuração -->
 		<copy todir="build/deployment/dev/config">
 			<fileset dir="src/main/resources" includes="*.properties" />
 			<filterchain>
@@ -129,7 +126,7 @@
 			</filterchain>
 		</copy>
 
-		<!-- Cria scripts executáveis -->
+		<!-- scripts executáveis -->
 		<echo file="build/deployment/dev/bin/run.sh">
 			java -cp ../lib/* payroll.PayrollApplication</echo>
 		<echo file="build/deployment/dev/bin/run.bat" append="false">
@@ -144,11 +141,21 @@
 			<os family="windows" />
 		</condition>
 
-		<!-- Windows -->
 		<exec executable="build/deployment/dev/bin/run.bat" os="Windows" failonerror="true" />
-
-		<!-- Unix/Linux/macOS -->
 		<exec executable="build/deployment/dev/bin/run.sh" os="Unix" failonerror="true" />
+	</target>
+
+
+	<target name="doc" description="generate documentation">
+
+		<mkdir dir="${doc.dir}" />
+		<javadoc sourcepath="${src.dir}" destdir="${doc.dir}"
+			classpath="${classes.dir};lib/*"
+			failonerror="false"
+		/>
+		<zip destfile="${build.dir}/javaDoc.zip"
+			basedir="${doc.dir}"
+			update="true" />
 	</target>
 
 </project>
