@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="spring-boot-ant" default="run" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
+
+	<!-- === Project properties === -->
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="classesTest.dir" value="${build.dir}/classesTest" />
+	<property name="jar.dir" value="${build.dir}/jar" />
+	<property name="doc.dir" value="${build.dir}/doc" />
+	<property name="lib.dir" value="lib" />
+	<property name="test.dir" value="src/test/java" />
+
+	<property name="project.version" value="1.0.0" />
+	<tstamp>
+		<format property="build.timestamp" pattern="yyyyMMdd-HHmmss" />
+	</tstamp>
+
+	<taskdef
+		resource="org/apache/ivy/ant/antlib.xml"
+		uri="antlib:org.apache.ivy.ant">
+		<classpath>
+			<fileset dir="${lib.dir}" includes="ivy*.jar" />
+		</classpath>
+	</taskdef>
+
+
+	<target name="resolve">
+		<ivy:settings file="ivysettings.xml" />
+		<ivy:resolve file="ivy.xml" />
+		<ivy:retrieve pattern="${lib.dir}/[artifact]-[revision].[ext]" />
+	</target>
+
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="cleanSpecificDirectory">
+		<delete dir="${build.dir}/deployment/dev" />
+	</target>
+
+
+	<target name="compile" depends="resolve">
+		<mkdir dir="${classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="*.jar" />
+			</classpath>
+		</javac>
+	</target>
+
+
+	<target name="jar" depends="compile">
+		<mkdir dir="${jar.dir}" />
+		<jar destfile="${jar.dir}/App.jar" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="payroll.PayrollApplication" />
+			</manifest>
+		</jar>
+	</target>
+
+
+	<target name="run" depends="compile">
+		<java classname="payroll.PayrollApplication" fork="true">
+			<classpath>
+				<pathelement path="${classes.dir}" />
+				<fileset dir="${lib.dir}" includes="*.jar" />
+			</classpath>
+		</java>
+	</target>
+
+
+	<target name="copyToDev" depends="jar">
+		<copy todir="${build.dir}/deployment/dev">
+			<fileset dir="${jar.dir}" includes="App.jar" />
+			<fileset dir="${lib.dir}" includes="*.jar" />
+		</copy>
+	</target>
+
+	<target name="subset_copyToDev" depends="jar">
+
+		<ivy:retrieve pattern="build/deployment/dev/lib/[artifact]-[revision].[ext]" conf="runtime" />
+	</target>
+
+	<target name="confFiles">
+
+		<copy todir="build/deployment/dev/config">
+			<fileset dir="src/main/resources" includes="*.properties" />
+			<filterchain>
+				<replacetokens>
+					<token key="version" value="${project.version}" />
+					<token key="timestamp" value="${build.timestamp}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+	</target>
+
+
+	<target name="deployToDev"
+		depends="cleanSpecificDirectory, copyToDev, subset_copyToDev, confFiles">
+	</target>
+
+	<target name="installDist" depends="jar, resolve">
+		<!-- Cria a pasta de distribuição -->
+		<mkdir dir="build/deployment/dev/bin" />
+		<mkdir dir="build/deployment/dev/lib" />
+		<mkdir dir="build/deployment/dev/config" />
+
+		<!-- Copia JAR principal -->
+		<copy file="${jar.dir}/App.jar" todir="build/deployment/dev/lib" />
+
+		<!-- Copia dependências runtime -->
+		<copy todir="build/deployment/dev/lib">
+			<fileset dir="${lib.dir}" includes="*.jar" />
+		</copy>
+
+		<!-- arquivos de configuração -->
+		<copy todir="build/deployment/dev/config">
+			<fileset dir="src/main/resources" includes="*.properties" />
+			<filterchain>
+				<replacetokens>
+					<token key="version" value="${project.version}" />
+					<token key="timestamp" value="${build.timestamp}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+		<!-- scripts executáveis -->
+		<echo file="build/deployment/dev/bin/run.sh">
+			java -cp ../lib/* payroll.PayrollApplication</echo>
+		<echo file="build/deployment/dev/bin/run.bat" append="false">
+			@echo off
+			java -cp "..\lib\*" payroll.PayrollApplication
+			pause
+		</echo>
+	</target>
+
+	<target name="runDist" depends="installDist">
+		<condition property="is.windows">
+			<os family="windows" />
+		</condition>
+
+		<exec executable="build/deployment/dev/bin/run.bat" os="Windows" failonerror="true" />
+		<exec executable="build/deployment/dev/bin/run.sh" os="Unix" failonerror="true" />
+	</target>
+
+
+	<target name="doc" description="generate documentation">
+
+		<mkdir dir="${doc.dir}" />
+		<javadoc sourcepath="${src.dir}" destdir="${doc.dir}"
+			classpath="${classes.dir};lib/*"
+			failonerror="false"
+		/>
+		<zip destfile="${build.dir}/javaDoc.zip"
+			basedir="${doc.dir}"
+			update="true" />
+	</target>
+
+	<target name="compileTest" depends="resolve">
+		<mkdir dir="${classesTest.dir}" />
+		<javac srcdir="${test.dir}" destdir="${classesTest.dir}" includeantruntime="false">
+			<classpath>
+				<pathelement path="${classes.dir}" />
+				<fileset dir="${lib.dir}" includes="*.jar" />
+			</classpath>
+		</javac>
+	</target>
+
+
+	<target name="runTest" depends="compileTest">
+		<java classname="TestMyClass" fork="true">
+			<classpath>
+				<pathelement path="${classesTest.dir}" />
+				<pathelement path="${classes.dir}" />
+				<fileset dir="lib" includes="*.jar" />
+			</classpath>
+		</java>
+	</target>
+
+</project>
