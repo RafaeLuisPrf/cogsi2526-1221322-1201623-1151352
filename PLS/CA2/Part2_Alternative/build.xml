@@ -104,5 +104,51 @@
 		depends="cleanSpecificDirectory, copyToDev, subset_copyToDev, confFiles">
 	</target>
 
+	<target name="installDist" depends="jar, resolve">
+		<!-- Cria a pasta de distribuição -->
+		<mkdir dir="build/deployment/dev/bin" />
+		<mkdir dir="build/deployment/dev/lib" />
+		<mkdir dir="build/deployment/dev/config" />
+
+		<!-- Copia JAR principal -->
+		<copy file="${jar.dir}/App.jar" todir="build/deployment/dev/lib" />
+
+		<!-- Copia dependências runtime -->
+		<copy todir="build/deployment/dev/lib">
+			<fileset dir="${lib.dir}" includes="*.jar" />
+		</copy>
+
+		<!-- Copia arquivos de configuração -->
+		<copy todir="build/deployment/dev/config">
+			<fileset dir="src/main/resources" includes="*.properties" />
+			<filterchain>
+				<replacetokens>
+					<token key="version" value="${project.version}" />
+					<token key="timestamp" value="${build.timestamp}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+		<!-- Cria scripts executáveis -->
+		<echo file="build/deployment/dev/bin/run.sh">
+			java -cp ../lib/* payroll.PayrollApplication</echo>
+		<echo file="build/deployment/dev/bin/run.bat" append="false">
+			@echo off
+			java -cp "..\lib\*" payroll.PayrollApplication
+			pause
+		</echo>
+	</target>
+
+	<target name="runDist" depends="installDist">
+		<condition property="is.windows">
+			<os family="windows" />
+		</condition>
+
+		<!-- Windows -->
+		<exec executable="build/deployment/dev/bin/run.bat" os="Windows" failonerror="true" />
+
+		<!-- Unix/Linux/macOS -->
+		<exec executable="build/deployment/dev/bin/run.sh" os="Unix" failonerror="true" />
+	</target>
 
 </project>
