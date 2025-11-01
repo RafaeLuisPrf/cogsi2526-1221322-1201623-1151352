@@ -61,6 +61,18 @@ Vagrant.configure("2") do |config|
   # Example for VirtualBox:
   #
 
+  #Paths to the private key
+  config.ssh.private_key_path = File.expand_path("~/.ssh/my_vagrant_key")
+
+  # Copy custom public SSH key to VM  
+  config.vm.provision "file", source: "~/.ssh/my_vagrant_key.pub", destination: "/home/vagrant/.ssh/authorized_keys"
+
+  # Set permissions/ownership
+  config.vm.provision "shell", inline: <<-SHELL
+    chown vagrant:vagrant /home/vagrant/.ssh/authorized_keys
+    chmod 600 /home/vagrant/.ssh/authorized_keys
+  SHELL
+
   config.vm.network "public_network"  # or default NAT
 
   # Explicit definition for the web VM
