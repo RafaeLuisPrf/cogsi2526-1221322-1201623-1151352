@@ -1,0 +1,40 @@
+---
+- name: Provision VM
+  hosts: all
+  become: true
+  # TASKS ARE run sequencial
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install Java
+      apt:
+        name: default-jre
+        state: present
+
+    - name: Install Tomcat
+      apt:
+        name: tomcat9
+        state: present
+
+    - name: Start Tomcat service
+      service:
+        name: tomcat9
+        state: started
+
+
+# Commands in Ansible to run this playbook:
+# vagrant up
+# vagrant ssh
+# ansible
+# ansible-playbook /vagrant/ansible/playbook.yml -i /vagrant/ansible/hosts -K
+
+
+
+# Vagrant Uses the command:
+# ansible-playbook –i hosts demo-playbook.yml
+# to run the playbook from the /vagrant/ansible/ directory
+
+# Verify syntax of the playbook before running:
+# ansible-playbook --syntax-check demo-playbook.yml
