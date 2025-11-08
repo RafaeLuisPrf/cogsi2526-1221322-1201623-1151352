@@ -159,7 +159,7 @@
   tasks:
     - name: Change file ownership, group and permissions
       ansible.builtin.file:
-        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/webserver
+        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/Web
         owner: root
         group: developers
         mode: '0770'
