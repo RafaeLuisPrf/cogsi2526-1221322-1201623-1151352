@@ -1,7 +1,9 @@
 ﻿# cogsi2526-1221322-1201623-1151352
 
 ## Self-evaluation
-
+Santiago- 33.3 %
+Rafael - 33.3 %
+Santiago -33.3 %
 ## Part 1
 
 ### 1 - Analysis / Requirements
@@ -109,11 +111,28 @@ On the database host, a health-check task was added to the playbook that checks 
 
 ![Health Check DB](Images/Part1/healthcheck_db.png)
 
+
 ## Alternative solution
+Automation of Infrastructure and application deployment is essential for the successful implementation and reproducibility of an IT environment.
+This is essential in the highly complex IT environment that most organizations employ.
+Ansible is one of the most popular and well-known Infrastructure-as-Code (IaC) solution, and it's mainly used for configuring systems, provisioning infrastructure and deploying applications.
+SaltStack is an IT automation engine for infrastructure management that combines a declarative YAML approach with event-drive automation.
+Ansible employes the concept of Playbooks, also based on YAML, to describe automation jobs and utilizes agentless architecture for fast and secure operation.
+
+This makes the platforms similar in terms of automation features, differing mainly in their design and focus.
 
 ### 1 - Analysis / Requirements
+The architecture of Saltstack is based on "Salt Master" and "Salt Minion".
+Being "Salt Master" the "Orchestrator" that controls "Salt Minion".
+The goal of this assignment is to automate the configuration of two virtual machines, one for the "Building REST Services with Spring" application and the other for the database and automatically implement the requested features. 
 
 ### 2 - Design of the solution
+In order to achieve the requirements of this assignment its needed to set up Salt Master in host1 virtual machine that will host the application and Salt Minion on host2, which is the virtual machine that will host the H2 database.
+
+A configuration file must be set up in order to automate the installation of "Building REST Services with Spring" application on host1 and automate the deployment and configuration of H2 on host2 by interfacing with Salt Minion.
+The following feature should also be implemented in the the configuration file:
+- Configuration of Privilege Access Management by enforcing complex password policy.
+- Creation of groups and users and restrict their access to the database only to these. 
 
 ### 3 - Implementation
 
@@ -428,6 +447,7 @@ Finally, the healthcheck.sls file tests whether the Spring application is respon
       - require:
             - service: h2_service
       {% endif %}
+
 
 
 
