@@ -3,7 +3,7 @@
 ## Self-evaluation
 Santiago- 33.3 %
 Rafael - 33.3 %
-Santiago -33.3 %
+Joao -33.3 %
 ## Part 1
 
 ### 1 - Analysis / Requirements
@@ -447,6 +447,7 @@ Finally, the healthcheck.sls file tests whether the Spring application is respon
       - require:
             - service: h2_service
       {% endif %}
+
 
 
 
