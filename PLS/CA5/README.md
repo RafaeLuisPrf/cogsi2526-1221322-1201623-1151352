@@ -109,3 +109,29 @@ Using the podman volume feature, data persistence can be achieved for the `db` c
 In general, the design of the solution using Podman closely mirrors that of Docker, with adjustments made for the specific commands and features of Podman.
 
 ### 3 - Implementation
+
+Part1 create the Podmanfiles for both versions of the applications:
+
+- Chat Application Podmanfile (Version 1 - Compile inside Podmanfile)
+
+      # Use a base image with Java (JDK)
+      FROM eclipse-temurin:17-jdk-jammy
+
+      # Set working directory
+      WORKDIR /app
+
+      # Copy the project files into the container
+      COPY . .
+
+      # === THIS INSTALLS DEPENDENCIES AND BUILDS THE APP ===
+      # The 'gradlew' script downloads Gradle and all Java dependencies
+      RUN cd ./Web && chmod 700 ./gradlew && ./gradlew build
+      RUN chmod 700 ./Web/build/libs/Part2-0.0.1-SNAPSHOT.jar
+
+      CMD [ "java", "-jar", "/app/Web/build/libs/Part2-0.0.1-SNAPSHOT.jar" ]
+
+With this Podmanfile, the application is compiled in the image build process, and the final image contains the compiled JAR file.
+
+- Chat Application Podmanfile (Version 2 - Compile on host and copy JAR)
+- Spring Application Podmanfile (Version 1 - Compile inside Podmanfile)
+- Spring Application Podmanfile (Version 2 - Compile on host and copy JAR)
