@@ -1,0 +1,14 @@
+# Use a base image with Java (JDK)
+FROM eclipse-temurin:17-jdk-jammy
+
+# Set working directory
+WORKDIR /app
+
+# Copy the project files into the container
+COPY . .
+
+RUN apt-get update && apt-get install -y wget unzip && apt-get install -y openjdk-17-jdk && mkdir /mydb && apt install netcat-traditional
+
+# === THIS INSTALLS DEPENDENCIES AND BUILDS THE APP ===
+
+CMD [ "./run.sh"]

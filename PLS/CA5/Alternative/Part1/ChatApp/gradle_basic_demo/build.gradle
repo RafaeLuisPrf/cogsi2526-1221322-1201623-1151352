@@ -1,0 +1,106 @@
+plugins {
+    // Apply the application plugin to add support for building a Java application
+    id 'application'
+}
+
+// Configure Java toolchain
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // Use Java 17
+    }
+}
+
+application{
+    mainClass = 'basic_demo.App'
+}
+
+description = "A trivial Gradle build"
+version = "0.1.0"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Use Apache Log4J for logging
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.2'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'	
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+ 
+jar {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE // allow duplicates
+
+
+    manifest {
+        attributes "Main-Class": "basic_demo.App"
+    }
+
+   from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+
+
+task runClient(type:JavaExec, dependsOn: classes){
+    group = "DevOps"
+    description = "Launches a chat client that connects to a server on localhost:59001 "
+  
+    classpath = sourceSets.main.runtimeClasspath
+
+    mainClass = 'basic_demo.ChatClientApp'
+
+    args 'localhost', '59001'
+}
+
+task runServer{
+    group = "DevOps"
+    description = "Launches a chat server on localhost:59001 "
+
+    doLast{
+        javaexec{
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = 'basic_demo.ChatServerApp'
+            args '59001'
+        }
+    }
+
+
+tasks.named('test',Test){
+	useJUnitPlatform()
+	maxHeapSize = '1G'
+
+	testLogging {
+		events "passed" 
+	}
+}
+
+}
+
+task copy(type: Copy){
+    from 'src/'
+    into 'backup/srcBackup'
+    
+}
+
+task zip(type: Zip){
+    dependsOn copy
+    from 'backup/srcBackup/'
+    destinationDirectory = file("backup/")
+    archiveFileName = 'srcBackup.zip'
+}
+
+
+tasks.withType(JavaCompile).configureEach {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+tasks.register('testsOn17', Test) {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}

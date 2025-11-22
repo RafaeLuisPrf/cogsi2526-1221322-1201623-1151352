@@ -1,0 +1,38 @@
+volumes:
+  h2_data:
+
+services:
+  web:
+    build: ./springApp
+    ports:
+      - "8080:8080"
+    restart: always
+
+    environment:
+      # This variable now resolves to: jdbc:h2:tcp://h2db:9092/mydb/appdb
+      SPRING_DATASOURCE_URL: jdbc:h2:tcp://h2db:9092/mydb/appdb
+      # This resolves to: my_secure_user (from .env)
+      SPRING_DATASOURCE_USERNAME: ${H2_USER:-sa}
+      # This resolves to: a_strong_password_1234 (from .env)
+      SPRING_DATASOURCE_PASSWORD: ${H2_PASSWORD:-password}
+      spring.jpa.hibernate.ddl-auto: update
+
+    depends_on:
+      h2db:
+        condition: service_healthy
+
+  h2db:
+    build: ./db
+    ports:
+      - "9092:9092"
+    restart: always
+    volumes:
+      - h2_data:/mydb
+        # 2. Resilience: Health check configuration
+
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"] # Checks if the TCP port is listening
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s # Give the H2 server time to start up before checking
