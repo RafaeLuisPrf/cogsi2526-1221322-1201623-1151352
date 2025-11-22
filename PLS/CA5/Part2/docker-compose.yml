@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: santiagoazevedo/h2-db:ca5-p2
+    build:
+      context: ./db
+      dockerfile: Dockerfile.db
+    container_name: db
+    environment:
+      - H2_OPTIONS=${H2_OPTIONS}
+    ports:
+      - "${DB_PORT}:9092"
+      - "8082:8082"
+    volumes:
+      - h2-data:/h2
+    networks:
+      ca5-network:
+        ipv4_address: 192.168.250.11
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  web:
+    image: santiagoazevedo/spring-web:ca5-p2
+    build:
+      context: ./web
+      dockerfile: Dockerfile.web
+    container_name: web
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_DRIVERCLASSNAME=${SPRING_DATASOURCE_DRIVER}
+      - SPRING_JPA_DATABASE_PLATFORM=${SPRING_JPA_DATABASE_PLATFORM}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
+    ports:
+      - "${WEB_PORT}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      ca5-network:
+        ipv4_address: 192.168.250.10
+
+volumes:
+  h2-data:
+    driver: local
+
+networks:
+  ca5-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.250.0/24
+          gateway: 192.168.250.1
