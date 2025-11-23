@@ -4,9 +4,9 @@
 
 # TODO
 
-Santiago-
-Rafael -
-Joao -
+Santiago- 50%
+Rafael - 50%
+Joao - 0%
 
 ## Part 1
 
