@@ -281,6 +281,7 @@ ENV SPRING_DATASOURCE_DRIVERCLASSNAME=org.h2.Driver
 ENV SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
 ```
 
+
 #### Publish the images (db and web) to Docker Hub
 
 Finally, to publish the images to Docker Hub, it is necessary to define the names of the images (in this case, santiagoazevedo/h2-db and /spring-web), log in with a Docker account, and then build and use the docker compose push command:
