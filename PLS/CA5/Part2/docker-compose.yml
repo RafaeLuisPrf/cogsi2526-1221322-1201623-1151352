@@ -18,7 +18,7 @@ services:
       ca5-network:
         ipv4_address: 192.168.250.11
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9092"]
       interval: 15s
       timeout: 3s
       retries: 5
