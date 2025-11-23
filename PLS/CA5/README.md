@@ -286,7 +286,7 @@ ENV SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
 
 Finally, to publish the images to Docker Hub, it is necessary to define the names of the images (in this case, santiagoazevedo/h2-db and /spring-web), log in with a Docker account, and then build and use the docker compose push command:
 
-![Docker hub](Images/Part2/docker_hub.png)
+![Docker hub](images/Part2/docker_hub.png)
 
 ## Alternative solution
 
