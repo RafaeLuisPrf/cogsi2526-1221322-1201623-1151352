@@ -25,6 +25,16 @@
           - libpam-modules
         state: present
 
+    #- name: Docker Installation
+    # apt:
+    #   name:
+    #      - docker-ce
+    ##     - docker-ce-cli
+    #     - containerd.io
+    #     - docker-buildx-plugin
+    #     - docker-compose-plugin
+    #   state: present
+
     - name: Clone the repository
       git:
         repo: https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git
@@ -65,18 +75,6 @@
     - name: Display Web Server status
       debug:
         msg: 'Web Server status is {{ web_status.status }}'
-
-- name: Verify Db Status
-  hosts: dbservers
-  become: true
-  tasks:
-    - name: Wait for DB service to be ready
-      wait_for:
-        host: 192.168.250.11
-        port: 9092
-        timeout: 5 # seconds
-        delay: 1
-      ignore_errors: true
 
 - name: Manage PAM configuration on Linux systems
   hosts: all
@@ -160,17 +158,6 @@
     - name: Change file ownership, group and permissions
       ansible.builtin.file:
         path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/Web
-        owner: root
-        group: developers
-        mode: '0770'
-
-- name: Db Directory Only Access for 'developers' Group
-  hosts: dbservers
-  become: true
-  tasks:
-    - name: Change file ownership, group and permissions
-      ansible.builtin.file:
-        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/db
         owner: root
         group: developers
         mode: '0770'

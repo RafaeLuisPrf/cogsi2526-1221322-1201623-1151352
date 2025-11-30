@@ -77,10 +77,26 @@ Define the following stages in the `Jenkinsfile`:
 
 There are 2 parts for this solution:
 
-- **Part 1**: Automate the infrastructure setup using Vagrant and Ansible.
-- **Part 2**: Create a CI/CD pipeline using Jenkins to build, test, publish, and deploy a Gradle-based Spring REST service in a Docker container with an H2 database.
+- **Part 1**: Create a CI/CD pipeline using Jenkins to build, test, publish, and deploy a Gradle-based Spring REST service in a Docker container with an H2 database.
+- **Part 2**: Automate the infrastructure setup using Vagrant and Ansible.
 
 ### 3 - Implementation
+
+#### 3.1 - JeenkinsPipeline
+
+This pipeline as said before is defined in a `Jenkinsfile` located in PLS/CA6/Part2/Jenkinsfile. It includes all the required stages and post-actions as specified in the analysis section.
+
+#### 3.2 Github Webhook
+
+The first step is to create a webhook in the GitHub repository settings. The webhook should be configured to trigger a jenkins host on push events to the `main` and `CA6-P2` branches.
+
+Before defining the webhook, the jenkins server must be configured to accept incoming webhook requests. This typically involves setting up a Jenkins job that listens for GitHub webhook events.
+
+In the jenkins 
+
+
+
+
 
 ## Alternative solution
 
