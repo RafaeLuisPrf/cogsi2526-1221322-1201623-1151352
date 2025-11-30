@@ -1,0 +1,176 @@
+---
+- name: Provision VM
+  hosts: all
+  become: true
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+
+    - name: Install Java
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Install PAM packages for password policies
+      apt:
+        name:
+          - libpam-pwquality
+          - libpam-modules
+        state: present
+
+    - name: Clone the repository
+      git:
+        repo: https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git
+        dest: /home/vagrant/masters/cogsi_CA4_P1
+        version: main # Adjust branch if needed
+      become_user: vagrant # Run as vagrant user
+
+- name: Create Groups and Users
+  hosts: all
+  become: true
+  vars:
+    linux_group: 'developers'
+    linux_user: 'devuser'
+  tasks:
+    - name: Create groups
+      group:
+        name: '{{ linux_group }}'
+        state: present
+    - name: Create users
+      user:
+        name: '{{ linux_user }}'
+        groups: '{{ linux_group }}'
+        state: present
+
+- name: Verify Web Status
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Check if Web Server is running
+      ansible.builtin.uri:
+        url: 'http://localhost:8080'
+        return_content: yes
+        method: GET
+      register: web_status
+      ignore_errors: true
+      failed_when: web_status.status != 200
+
+    - name: Display Web Server status
+      debug:
+        msg: 'Web Server status is {{ web_status.status }}'
+
+- name: Verify Db Status
+  hosts: dbservers
+  become: true
+  tasks:
+    - name: Wait for DB service to be ready
+      wait_for:
+        host: 192.168.250.11
+        port: 9092
+        timeout: 5 # seconds
+        delay: 1
+      ignore_errors: true
+
+- name: Manage PAM configuration on Linux systems
+  hosts: all
+  become: true
+  gather_facts: false
+
+  collections:
+    - community.general
+
+  tasks:
+    - name: Ensure pam_pwquality is configured with desired password policy
+      ansible.builtin.copy:
+        dest: /etc/security/pwquality.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          # Password quality requirements
+          minlen = 12
+          dcredit = -1       # one digit
+          ucredit = -1       # one uppercase letter
+          lcredit = -1       # one lowercase letter
+          ocredit = -1       # one special character
+          minclass = 4      # at least 4 character classes
+          dictcheck = 1     # enable dictionary check
+          retry = 3
+          maxrepeat = 5
+          usercheck = 1     # disallow passwords containing username
+
+    - name: Ensure pam_pwquality.so is used in PAM stack
+      community.general.pamd:
+        name: common-password
+        type: password
+        control: requisite
+        module_path: pam_pwquality.so
+        module_arguments:
+          - try_first_pass
+          - local_users_only
+          - retry=3
+          - authtok_type=
+        state: args_present
+
+    - name: Add password history to prevent reuse of last 5 passwords
+      community.general.pamd:
+        name: common-password
+        type: password
+        control: required
+        module_path: pam_pwhistory.so
+        module_arguments:
+          - remember=5
+          - use_authtok
+        state: args_present
+
+    - name: Add account locking on 5 failed logins for 10 minutes
+      community.general.pamd:
+        name: common-auth
+        type: auth
+        control: required
+        module_path: pam_faillock.so
+        module_arguments:
+          - preauth
+          - silent
+          - deny=5
+          - unlock_time=600
+        state: args_present
+
+    - name: Add account unlocking in account stack
+      community.general.pamd:
+        name: common-account
+        type: account
+        control: required
+        module_path: pam_faillock.so
+        module_arguments:
+          - no_log_info
+        state: args_present
+
+- name: WebServer Directory Only Access for 'developers' Group
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Change file ownership, group and permissions
+      ansible.builtin.file:
+        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/Web
+        owner: root
+        group: developers
+        mode: '0770'
+
+- name: Db Directory Only Access for 'developers' Group
+  hosts: dbservers
+  become: true
+  tasks:
+    - name: Change file ownership, group and permissions
+      ansible.builtin.file:
+        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/db
+        owner: root
+        group: developers
+        mode: '0770'

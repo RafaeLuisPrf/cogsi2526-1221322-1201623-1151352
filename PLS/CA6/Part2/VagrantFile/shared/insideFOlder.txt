@@ -1,0 +1,1 @@
+Test to verify if this folder is inside the virtual machine
