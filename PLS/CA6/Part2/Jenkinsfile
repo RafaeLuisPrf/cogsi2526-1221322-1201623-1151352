@@ -16,8 +16,8 @@ pipeline {
             steps {
               echo 'Pulling latest source code from repository...'
               // Use the built-in SCM configuration to get the code
-              git branch: 'CA6_P2', url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git'
-              //checkout scm
+              //git branch: 'CA6_P2', url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git'
+              checkout scm
             }
         }
 

@@ -120,7 +120,7 @@ The branches that will trigger the webhook are `main` and `CA6_P2`.
 
 ![alt text](Images\part2\Branches.png)
 
-The following image shows the result of a successful webhook execution, where the last delivery was successful:
+The following image shows the result of a successful webhook execution, where the last delivery was successfull:
 
 ![alt text](Images\part2\webhookResult.png)
 
