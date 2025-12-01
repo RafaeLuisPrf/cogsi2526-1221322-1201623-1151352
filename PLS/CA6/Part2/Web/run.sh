@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DB_HOST="192.168.250.11"     # IP of your H2 VM
+DB_HOST="127.0.0.1"     # IP of your H2 VM
 DB_PORT=9092                # H2 server port
 
 echo "Waiting for H2 database at $DB_HOST:$DB_PORT..."

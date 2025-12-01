@@ -1,13 +1,23 @@
 pipeline {
     agent any
 
+    // Define environment variables for registry and image name
+    environment {
+        // Replace with your actual Docker Hub username or private registry prefix
+        DOCKER_REGISTRY = 'rafaeluise/my-app' 
+        
+        // Use JENKINS_URL and BUILD_NUMBER for a unique, traceable tag
+        IMAGE_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+    }
+
     stages {
         // 1. Checkout – Pull the latest source code from your repository
         stage('Checkout') {
             steps {
               echo 'Pulling latest source code from repository...'
               // Use the built-in SCM configuration to get the code
-              checkout scm
+              git branch: 'CA6_P2', url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git'
+              //checkout scm
             }
         }
 
@@ -16,46 +26,39 @@ pipeline {
             steps {
                 echo 'Compiling code and producing artifacts...'
                 dir('PLS/CA6/Part2/Web')  {
-                  sh 'gradlew clean build'
+                  sh 'chmod +x ./gradlew'
+                  sh './gradlew clean build'
                 }
             }
         }
 
         // 3. Test – Run unit and integration tests to verify the application’s correctness. Publish the test results in Jenkins
         stage('Test') {
-            parallel {
-                stage('Test On Windows') {
-                    steps {
-                        echo "Running tests on Windows..."
-                        dir('PLS/CA6/Part2/Web')  {
-                            bat 'gradlew test'
-                        }
-                    }
-                }
-                stage('Test On Linux') {
-                    steps {
-                        echo "Running tests on Linux..."
-                        dir('PLS/CA6/Part2/Web')  {
-                            sh 'gradlew test'
-                        }
-                    }
-                }
+          steps {
+            echo "Running tests on Linux..."
+            dir('PLS/CA6/Part2/Web')  {
+                sh './gradlew test'
             }
-            steps {
-                echo 'Publishing aggregated test results...'
-                junit '**/*/test-results/test/*.xml'
-            }
+            echo 'Publishing aggregated test results...'
+            junit '**/*/test-results/test/*.xml'
+        }
         }
 
-        // 4. Tag Docker image – Build a Docker image for the application and tag it appropriately
         stage('Tag Docker Image') {
             steps {
                 script {
-                    def imageTag = "my-app:${env.BRANCH_NAME ?: 'master'}-${env.BUILD_NUMBER}"
-                    echo "Building and tagging Docker image with: ${imageTag}"
-                    // Placeholder for Docker build and tag commands:
-                    // sh "docker build -t ${imageTag} ."
-                    env.DOCKER_IMAGE_TAG = imageTag // Set an environment variable for later stages
+                    def appDir = 'PLS/CA6/Part2/Web' // Directory containing your Dockerfile
+                    
+                    // 1. Build the Docker Image
+                    // Assumes the jar/war file is available in the 'build/libs' directory 
+                    // within the appDir (standard Gradle/Maven output)
+                    sh "docker build -t ${DOCKER_REGISTRY}:${IMAGE_TAG} ${appDir}"
+                    
+                    echo "Successfully built and tagged image: ${DOCKER_REGISTRY}:${IMAGE_TAG}"
+
+                    // 2. Add 'latest' tag for convenience (optional)
+                    sh "docker tag ${DOCKER_REGISTRY}:${IMAGE_TAG} ${DOCKER_REGISTRY}:latest"
+                    echo "Also tagged as: ${DOCKER_REGISTRY}:latest"
                 }
             }
         }
