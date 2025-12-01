@@ -1,56 +1,131 @@
 pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      steps {
-        echo "build_script.s rarafah"
-      }
+    agent any
+
+    stages {
+        // 1. Checkout – Pull the latest source code from your repository
+        stage('Checkout') {
+            steps {
+              echo 'Pulling latest source code from repository...'
+              // Use the built-in SCM configuration to get the code
+              checkout scm
+            }
+        }
+
+        // 2. Assemble – Compile the code and produce the artifact files
+        stage('Assemble') {
+            steps {
+                echo 'Compiling code and producing artifacts...'
+                dir('PLS/CA6/Part2/Web')  {
+                  sh 'gradlew clean build'
+                }
+            }
+        }
+
+        // 3. Test – Run unit and integration tests to verify the application’s correctness. Publish the test results in Jenkins
+        stage('Test') {
+            parallel {
+                stage('Test On Windows') {
+                    steps {
+                        echo "Running tests on Windows..."
+                        dir('PLS/CA6/Part2/Web')  {
+                            bat 'gradlew test'
+                        }
+                    }
+                }
+                stage('Test On Linux') {
+                    steps {
+                        echo "Running tests on Linux..."
+                        dir('PLS/CA6/Part2/Web')  {
+                            sh 'gradlew test'
+                        }
+                    }
+                }
+            }
+            steps {
+                echo 'Publishing aggregated test results...'
+                junit '**/*/test-results/test/*.xml'
+            }
+        }
+
+        // 4. Tag Docker image – Build a Docker image for the application and tag it appropriately
+        stage('Tag Docker Image') {
+            steps {
+                script {
+                    def imageTag = "my-app:${env.BRANCH_NAME ?: 'master'}-${env.BUILD_NUMBER}"
+                    echo "Building and tagging Docker image with: ${imageTag}"
+                    // Placeholder for Docker build and tag commands:
+                    // sh "docker build -t ${imageTag} ."
+                    env.DOCKER_IMAGE_TAG = imageTag // Set an environment variable for later stages
+                }
+            }
+        }
+
+        // 5. Archive – Archive the Dockerfile and related metadata in Jenkins for traceability and future reference
+        stage('Archive') {
+            steps {
+                echo "Archiving Dockerfile and build metadata..."
+                // Placeholder for archiving files:
+                // archiveArtifacts artifacts: 'Dockerfile, build-info.json', fingerprint: true
+            }
+        }
+
+        // 6. Push Docker Image – Push the tagged Docker image to Docker Hub
+        stage('Push Docker Image') {
+            steps {
+                echo "Pushing Docker image ${env.DOCKER_IMAGE_TAG} to Docker Hub..."
+                // Placeholder for Docker login and push using Jenkins Credentials
+                // withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                //     sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                //     sh "docker push ${env.DOCKER_IMAGE_TAG}"
+                // }
+            }
+        }
+
+        // The following stages handle deployment with manual confirmation
+
+        stage('Confirm Deploy to Staging') {
+            steps {
+                timeout(time: 60, unit: 'SECONDS') {
+                    input(message: 'Okay to Deploy to Staging?', ok: 'Let\'s Do it!')
+                }
+            }
+        }
+
+        // 7. Deploy – Use an Ansible playbook for the deployment of the latest Docker image (to Staging)
+        stage('Deploy to Staging') {
+            steps {
+                echo "Deploying ${env.DOCKER_IMAGE_TAG} to staging using Ansible..."
+                // Placeholder for Ansible execution:
+                // sh "ansible-playbook -i inventory/staging deploy.yml --extra-vars \"docker_image=${env.DOCKER_IMAGE_TAG}\""
+            }
+        }
+
+        stage('Confirm Deploy to Production') {
+            steps {
+                timeout(time: 60, unit: 'SECONDS') {
+                    input(message: 'Okay to Deploy to Production?', ok: 'Let\'s Do it!')
+                }
+            }
+        }
+
+        // 7. Deploy – Use an Ansible playbook for the deployment of the latest Docker image (to Production)
+        stage('Deploy to Production') {
+            steps {
+                echo "Deploying ${env.DOCKER_IMAGE_TAG} to production using Ansible..."
+                // Placeholder for Ansible execution:
+                // sh "ansible-playbook -i inventory/production deploy.yml --extra-vars \"docker_image=${env.DOCKER_IMAGE_TAG}\""
+            }
+        }
     }
-    stage('Test') {
-     parallel {
-       stage('Test On Windows') {
-         steps {
-           echo "Running tests on Windows"
-         }
-       }
-       stage('Test On Linux') {
-         steps {
-           echo "Running tests on Linux"
-         }
-       }
-     }
-   }
-   stage('Confirm Deploy to staging') {
-     steps {
-       timeout(time: 60, unit: 'SECONDS') {
-         input(message: 'Okay to Deploy?', ok: 'Let\'s Do it!')
-       }
-     }
-   }
-   stage('Deploy to Staging') {
-     steps {
-       echo "Deploying to staging..."
-     }
-   }
-   stage('Confirm Deploy to production') {
-     steps {
-       timeout(time: 60, unit: 'SECONDS') {
-         input(message: 'Okay to Deploy?', ok: 'Let\'s Do it!')
-       }
-     }
-   }
-   stage('Deploy to Production') {
-     steps {
-       echo "Deploying to production..."
-     }
-   }
-  }
-  post {
-   success {
-     echo "Build succeeded!"
-   }
-   failure {
-     echo "Build failed!"
-   }
- }
+
+    ---
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed at one or more stages!"
+        }
+    }
 }

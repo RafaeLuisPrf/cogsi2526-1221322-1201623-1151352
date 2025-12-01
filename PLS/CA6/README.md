@@ -89,7 +89,7 @@ Before the implementation of the jenkinsfile, the master server has to be define
 
 In this case, a personal computer was used as the master server, running jenkins in a docker container with a public image jenkins/jenkins:lts.
 
-#### 3.2 Public master server
+#### 3.1.1 Public master server
 
 Because the master server is running in a docker container in the port 8080 in localhost, for the webhook to work, the server must be publicly accessible. For this, ngrok was used to create a secure tunnel to localhost.
 
@@ -102,17 +102,29 @@ ngrok http 8080
 
 ![alt text](Images\part2\ngrok.png)
 
-#### 3.2 Github Webhook
+#### 3.1.2 Github Webhook
 
-The first step is to create a webhook in the GitHub repository settings. The webhook should be configured to trigger a jenkins host on push events to the `main` and `CA6-P2` branches.
+The first step is to create a webhook in the GitHub repository settings. The webhook should be configured to trigger a jenkins host on push events.
 
-Before defining the webhook, the jenkins server must be configured to accept incoming webhook requests. This typically involves setting up a Jenkins pipeline that listens for GitHub webhook events.
+The payload URL should be set to the public URL provided by ngrok, followed by `/github-webhook/`. The content type should be set to `application/json`, and the events to trigger the webhook should be set to `Just the push event`.
 
-In the jenkins 
+![alt text](Images/part2/webhook.png)
 
+After defining the webhook, the jenkins master server must be configured to accept incoming webhook requests. This typically involves setting up a Jenkins pipeline that listens for GitHub webhook events.
 
+The following image shows the webhook definition in the GitHub repository, where the repository URL has been defined and the checkbox for push events has been selected:
 
+![alt text](Images\part2\jenkinsWebhookDefinition.png)
 
+The branches that will trigger the webhook are `main` and `CA6_P2`.
+
+![alt text](Images\part2\Branches.png)
+
+The following image shows the result of a successful webhook execution, where the last delivery was successful:
+
+![alt text](Images\part2\webhookResult.png)
+
+#### 3.1.2 Github Webhook
 
 ## Alternative solution
 
