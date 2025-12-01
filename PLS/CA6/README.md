@@ -84,13 +84,29 @@ There are 2 parts for this solution:
 
 #### 3.1 - JeenkinsPipeline
 
-This pipeline as said before is defined in a `Jenkinsfile` located in PLS/CA6/Part2/Jenkinsfile. It includes all the required stages and post-actions as specified in the analysis section.
+This pipeline as said before is defined in a `Jenkinsfile` located in PLS/CA6/Part2/Jenkinsfile.
+Before the implementation of the jenkinsfile, the master server has to be defined with all the necessary plugins and nodes.
+
+In this case, a personal computer was used as the master server, running jenkins in a docker container with a public image jenkins/jenkins:lts.
+
+#### 3.2 Public master server
+
+Because the master server is running in a docker container in the port 8080 in localhost, for the webhook to work, the server must be publicly accessible. For this, ngrok was used to create a secure tunnel to localhost.
+
+After downloading and installing ngrok, the following command was used to create the tunnel:
+
+```bash
+ngrok authtoken <your_auth_token>
+ngrok http 8080
+```
+
+![alt text](Images\part2\ngrok.png)
 
 #### 3.2 Github Webhook
 
 The first step is to create a webhook in the GitHub repository settings. The webhook should be configured to trigger a jenkins host on push events to the `main` and `CA6-P2` branches.
 
-Before defining the webhook, the jenkins server must be configured to accept incoming webhook requests. This typically involves setting up a Jenkins job that listens for GitHub webhook events.
+Before defining the webhook, the jenkins server must be configured to accept incoming webhook requests. This typically involves setting up a Jenkins pipeline that listens for GitHub webhook events.
 
 In the jenkins 
 
