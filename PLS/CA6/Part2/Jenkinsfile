@@ -47,7 +47,7 @@ pipeline {
         stage('Tag Docker Image') {
             steps {
                 script {
-                    def appDir = 'PLS/CA6/Part2/Web' // Directory containing your Dockerfile
+                    def appDir = 'PLS/CA6/Part2/'
                     
                     // 1. Build the Docker Image
                     // Assumes the jar/war file is available in the 'build/libs' directory 

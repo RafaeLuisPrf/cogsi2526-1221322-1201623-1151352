@@ -124,7 +124,7 @@ The following image shows the result of a successful webhook execution, where th
 
 ![alt text](Images\part2\webhookResult.png)
 
-#### 3.1.2 Github Webhook
+#### 3.1.3
 
 ## Alternative solution
 
