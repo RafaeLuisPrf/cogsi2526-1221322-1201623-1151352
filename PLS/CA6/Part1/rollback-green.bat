@@ -1,7 +1,7 @@
 @echo off
 
 set JENKINS_USER=SantiagoAzevedo
-set JENKINS_TOKEN=11fe1bbdf0b89b0b1f13bfe8d568fa4a74
+set JENKINS_TOKEN=""
 set STABLE_TAG=stable-v45
 
 set INVENTORY=/mnt/c/Users/Admin/Documents/GitHub/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/inventoryWsl.ini
