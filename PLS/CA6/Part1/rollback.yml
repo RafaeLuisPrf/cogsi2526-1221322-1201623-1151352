@@ -3,12 +3,12 @@
   become: yes
   vars:
     service_name: spring-app-green
-    stable_tag: "stable-v45" 
+    stable_tag: "stable-v5" 
     jenkins_url: "http://192.168.56.1:10000"
     jenkins_user: "SantiagoAzevedo"
-    jenkins_token: "Y7VS8X}C;9K_Kdc" 
-    artifact_path: "/job/CA6-Part1/lastSuccessfulBuild/artifact/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
-    dest_jar: "/home/vagrant/app/repo/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
+    jenkins_token: "--- IGNORE ---" 
+    artifact_path: "/job/CA6-Part1/lastSuccessfulBuild/artifact/PLS/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
+    dest_jar: "/home/vagrant/app/repo/PLS/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
 
   tasks:
     - name: Stop Green service
