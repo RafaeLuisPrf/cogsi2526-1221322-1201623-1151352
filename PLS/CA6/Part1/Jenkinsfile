@@ -130,7 +130,7 @@ pipeline {
                 echo 'Copying Vagrant SSH keys to WSL...'
                 script {
                     bat """
-                        wsl bash -c "mkdir -p ~/.ssh && cp /mnt/c/Users/Admin/Documents/GitHub/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/.vagrant/machines/green/virtualbox/private_key ~/.ssh/green_key && chmod 600 ~/.ssh/green_key"
+                        wsl bash -c "mkdir -p ~/.ssh && cp /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/.vagrant/machines/green/virtualbox/private_key ~/.ssh/green_key && chmod 600 ~/.ssh/green_key"
                     """
                 }
             }
@@ -140,7 +140,7 @@ pipeline {
             steps{
                 script {
                     bat """
-                        wsl bash -c "ansible-playbook -i /mnt/c/Users/Admin/Documents/GitHub/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/inventoryWsl.ini /mnt/c/Users/Admin/Documents/GitHub/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/playbook-deploy-green.yml --limit green --extra-vars 'git_token=${env.GIT_TOKEN}'"
+                        wsl bash -c "ansible-playbook -i /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/inventoryWsl.ini /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/playbook-deploy-green.yml --limit green --extra-vars 'git_token=${env.GIT_TOKEN}'"
                     """
                 }
             }
