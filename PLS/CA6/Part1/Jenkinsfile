@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Checking out source code from repository...'
-                git branch: 'CA6-Part1',
+                git branch: 'CA6_P1',
                     url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git',
                     credentialsId: 'git-token-credential-id'
             }
