@@ -1,0 +1,141 @@
+---
+- name: Set global variables
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set facts for all hosts
+      set_fact:
+        app_user: vagrant
+        app_dir: /home/vagrant/app
+        h2_data_dir: /home/vagrant/h2-data
+        git_repo: "https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git"
+        app_path: "PLS/CA2/Part2"
+
+- name: Provision Blue VM
+  hosts: all
+  become: yes
+  tasks:
+    - name: Wait for dpkg lock
+      shell: |
+        while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+          echo "Waiting for dpkg lock..."
+          sleep 5
+        done
+      become: yes
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install JDK and JRE
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - openjdk-17-jdk
+        - openjdk-17-jre
+
+    - name: Install Netcat
+      apt:
+        name: netcat
+        state: present
+
+    - name: Create H2 data directory
+      file:
+        path: "{{ h2_data_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0775'
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+- name: Deploy application to Blue VM
+  hosts: blue
+  become: yes
+  vars:
+    service_name: spring-app-blue
+  tasks:
+    - name: Clone repository with authentication
+      git:
+        repo: "{{ 'https://' + git_token + '@github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git' if git_token is defined and git_token else git_repo }}"
+        dest: "{{ app_dir }}/repo"
+        version: main
+        force: yes
+      become_user: "{{ app_user }}"
+
+    - name: Check if gradlew exists
+      stat:
+        path: "{{ app_dir }}/repo/{{ app_path }}/gradlew"
+      register: gradlew_stat
+
+    - name: Make gradlew executable
+      file:
+        path: "{{ app_dir }}/repo/{{ app_path }}/gradlew"
+        mode: '0755'
+      when: gradlew_stat.stat.exists
+
+    - name: Build application with Gradle
+      command: ./gradlew build --no-daemon
+      args:
+        chdir: "{{ app_dir }}/repo/{{ app_path }}"
+      become_user: "{{ app_user }}"
+      environment:
+        JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+
+    - name: Configure H2 database for persistence
+      lineinfile:
+        path: "{{ app_dir }}/repo/{{ app_path }}/src/main/resources/application.properties"
+        regexp: '^spring.datasource.url='
+        line: "spring.datasource.url=jdbc:h2:file:{{ h2_data_dir }}/jpadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+        create: yes
+
+    - name: Stop Blue service if running
+      systemd:
+        name: "{{ service_name }}"
+        state: stopped
+      ignore_errors: yes
+
+    - name: Find JAR file
+      find:
+        paths: "{{ app_dir }}/repo/{{ app_path }}/build/libs/"
+        patterns: "*.jar"
+        excludes: "*-plain.jar"
+      register: jar_files
+
+    - name: Create systemd service for Blue
+      copy:
+        dest: "/etc/systemd/system/{{ service_name }}.service"
+        content: |
+          [Unit]
+          Description=Spring Boot Application Blue
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ app_user }}
+          WorkingDirectory={{ app_dir }}/repo/{{ app_path }}
+          ExecStart=/usr/bin/java -jar {{ jar_files.files[0].path }}
+          Restart=on-failure
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and restart Blue service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: yes
+        state: restarted

@@ -1,0 +1,115 @@
+---
+- name: Set global variables
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set facts for all hosts
+      set_fact:
+        app_user: vagrant
+        app_dir: /home/vagrant/app
+        h2_data_dir: /home/vagrant/h2-data
+        git_repo: "https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git"
+        app_path: "PLS/CA2/Part2"
+
+- name: Deploy application to Green VM
+  hosts: green
+  become: yes
+  vars:
+    service_name: spring-app-green
+  tasks:
+    - name: Clone repository with authentication
+      git:
+        repo: "{{ 'https://' + git_token + '@github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git' if git_token is defined and git_token else git_repo }}"
+        dest: "{{ app_dir }}/repo"
+        version: main
+        force: yes
+      become_user: "{{ app_user }}"
+
+    - name: Check if gradlew exists
+      stat:
+        path: "{{ app_dir }}/repo/{{ app_path }}/gradlew"
+      register: gradlew_stat
+
+    - name: Make gradlew executable
+      file:
+        path: "{{ app_dir }}/repo/{{ app_path }}/gradlew"
+        mode: '0755'
+      when: gradlew_stat.stat.exists
+
+    - name: Stop Green service if running
+      systemd:
+        name: "{{ service_name }}"
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove old H2 database files
+      file:
+        path: "{{ h2_data_dir }}"
+        state: absent
+
+    - name: Recreate H2 data directory
+      file:
+        path: "{{ h2_data_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0775'
+
+    - name: Configure H2 database for persistence
+      lineinfile:
+        path: "{{ app_dir }}/repo/{{ app_path }}/src/main/resources/application.properties"
+        regexp: '^spring.datasource.url='
+        line: "spring.datasource.url=jdbc:h2:file:{{ h2_data_dir }}/jpadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+        create: yes
+
+    - name: Ensure Hibernate auto-creates schema
+      lineinfile:
+        path: "{{ app_dir }}/repo/{{ app_path }}/src/main/resources/application.properties"
+        regexp: '^spring.jpa.hibernate.ddl-auto='
+        line: "spring.jpa.hibernate.ddl-auto=update"
+        create: yes
+
+    - name: Build application with Gradle
+      command: ./gradlew clean build --no-daemon
+      args:
+        chdir: "{{ app_dir }}/repo/{{ app_path }}"
+      become_user: "{{ app_user }}"
+      environment:
+        JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+
+    - name: Find JAR file
+      find:
+        paths: "{{ app_dir }}/repo/{{ app_path }}/build/libs/"
+        patterns: "*.jar"
+        excludes: "*-plain.jar"
+      register: jar_files
+
+    - name: Create systemd service for Green
+      copy:
+        dest: "/etc/systemd/system/{{ service_name }}.service"
+        content: |
+          [Unit]
+          Description=Spring Boot Application Green
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ app_user }}
+          WorkingDirectory={{ app_dir }}/repo/{{ app_path }}
+          ExecStart=/usr/bin/java -jar {{ jar_files.files[0].path }}
+          Restart=on-failure
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and restart Green service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: yes
+        state: restarted
