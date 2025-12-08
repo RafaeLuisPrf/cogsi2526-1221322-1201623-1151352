@@ -1048,10 +1048,6 @@ The playbook performs the following tasks:
 
 With this setup, the production VM will be automatically created and provisioned with Docker and the application will be deployed in a Docker container.
 
-### 2 - Design of the solution
-
-### 3 - Implementation
-
 ## Alternative solution
 
 ### 1.1 - Requirements
