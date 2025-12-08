@@ -12,10 +12,6 @@ Joao -
 
 ### 1 - Analysis / Requirements
 
-### 2 - Design of the solution
-
-### 3 - Implementation
-
 The first part of CA6 consists of creating a Jenkins pipeline that automates the build, test, and deployment of the “Building REST services with Spring” application (Gradle version) to local virtual machines, following a structure similar to CA3 Part 1 (using vagrant).
 
 ### 1.1 Infrastructure
