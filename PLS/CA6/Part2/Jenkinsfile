@@ -55,7 +55,7 @@ pipeline {
         stage('Archive') {
             steps {
                 echo "Archiving Dockerfile and build metadata..."
-                archiveArtifacts artifacts: 'Dockerfile', fingerprint: true
+                archiveArtifacts artifacts: 'PLS/CA6/Part2/Dockerfile', fingerprint: true
             }
         }
 
