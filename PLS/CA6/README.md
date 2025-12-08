@@ -32,7 +32,7 @@
   - **Login to Docker Hub** (using credentials).
   - **Pull the latest Docker image** from Docker Hub.
   - **Stop and remove the old container** if it exists.
-  - **Run the new Docker container**  successfully.
+  - **Run the new Docker container** successfully.
 
 ---
 
@@ -124,7 +124,288 @@ The following image shows the result of a successful webhook execution, where th
 
 ![alt text](Images\part2\webhookResult.png)
 
-#### 3.1.3
+#### 3.1.3 Jenkinsfile Stages
+
+The Jenkinsfile is divided into the following stages:
+
+0. Pipeline Definition
+
+The options section was added to skip the default checkout of the code, as it is not necessary for this pipeline.The environment section defines a variable `DOCKER_IMAGE_TAG` that will be used to tag the docker image.
+
+        options{
+            skipDefaultCheckout()
+        }
+
+        environment {
+            DOCKER_IMAGE_TAG = 'rafalu2225/cogsi_ca6:latest'
+        }
+
+1. Checkout
+
+Because the jenkins by default checks out the code from the repository, this stage was modified to just print a message indicating that the code was checked out successfully.
+
+        stage('Checkout') {
+            steps {
+              echo 'Source code from repository successfully checked out...'
+            }
+        }
+
+2. Assemble
+
+In this stage, the code is compiled and the artifacts are produced using gradle. The gradle wrapper is used to ensure that the correct version of gradle is used.
+
+        stage('Assemble') {
+            steps {
+                echo 'Compiling code and producing artifacts...'
+                dir('PLS/CA6/Part2/Web')  {
+                  sh 'chmod +x ./gradlew'
+                  sh './gradlew clean build'
+                }
+            }
+        }
+
+3. Test
+
+Here, unit and integration tests are run. The test results are published in Jenkins using the junit step.
+
+        stage('Test') {
+          steps {
+            echo "Running tests on Linux..."
+            dir('PLS/CA6/Part2/Web')  {
+                sh './gradlew test'
+            }
+            echo 'Publishing aggregated test results...'
+            junit '**/*/test-results/test/*.xml'
+          }
+        }
+
+4. Tag Docker Image
+
+A docker image was created using the Dockerfile located in PLS/CA6/Part2/Dockerfile. This image contains the application and the H2 database.
+
+    # Use a base image that has Java installed
+    FROM eclipse-temurin:21-jdk-alpine
+
+    # Install necessary tools (like bash)
+    RUN apk update && apk add bash
+
+    # Set the working directory
+    WORKDIR /app
+
+    COPY db/h2/bin/*.jar /app/db.jar
+    COPY Web/build/libs/*.jar /app/backend.jar
+
+    COPY dockerStartupFile.sh /app/startupScript.sh
+    RUN chmod +x /app/startupScript.sh
+
+    EXPOSE 8081
+
+    CMD ["/app/startupScript.sh"]
+
+The stage builds the docker image and tags it with the value defined in the environment variable `DOCKER_IMAGE_TAG`.
+
+        stage('Tag Docker Image') {
+            steps {
+                script {
+                    def appDir = 'PLS/CA6/Part2/'
+
+                    sh "docker build -t ${env.DOCKER_IMAGE_TAG} ${appDir}"
+                    echo "Successfully built and tagged image: ${env.DOCKER_IMAGE_TAG}"
+                }
+            }
+        }
+
+5. Archive
+
+The archive stage archives the Dockerfile and related metadata in Jenkins for traceability.
+
+        stage('Archive') {
+            steps {
+                echo "Archiving Dockerfile and build metadata..."
+                archiveArtifacts artifacts: 'PLS/CA6/Part2/Dockerfile', fingerprint: true
+            }
+        }
+
+6. Push Docker Image
+
+This stage pushes the tagged docker image to Docker Hub using authentication credentials stored in Jenkins.
+
+For security reasons, the docker hub credentials are stored inside the master server:
+
+![alt text](Images/part2/credentials.png)
+
+        stage('Push Docker Image') {
+            steps {
+                echo "Pushing Docker image ${env.DOCKER_IMAGE_TAG} to Docker Hub..."
+
+                withCredentials(
+                    [usernamePassword
+                    (credentialsId: 'dockerhub-info',
+                     passwordVariable: 'DOCKER_PASSWORD',
+                      usernameVariable: 'DOCKER_USERNAME'
+                      )
+                    ])
+                {
+                    sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                    sh "docker push ${env.DOCKER_IMAGE_TAG}"
+                }
+            }
+        }
+
+7. Deploy to Production
+
+Finaly, the deploy stage uses the Ansible playbook to deploy the latest docker image to the production VM.
+
+        stage('Deploy to Production') {
+            steps {
+                echo "Deploying ${env.DOCKER_IMAGE_TAG} to production using Ansible..."
+                dir('PLS/CA6/Part2/VagrantFile/') {
+                    sh "vagrant up ProductionVm"
+                }
+            }
+        }
+
+# 3.2 - Vagrant and Ansible
+
+The following vagrantfile creates a production VM using the `bento/ubuntu-22.04` box. The VM is configured with 6GB of RAM and 8 CPUs. The Ansible provisioner is used to run the playbook located in `ansible/playbook.yml`.
+
+```ruby
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-22.04"
+
+  config.vm.network "public_network"  # or default NAT
+
+  # Explicit definition for the web VM
+  config.vm.define "ProductionVm" do |pd|
+    pd.vm.hostname = "ProductionVm"
+    pd.vm.network "private_network", ip: "192.168.250.10"
+    pd.vm.network "forwarded_port", guest: 8080, host: 8088
+    pd.vm.synced_folder "./ansible", "/home/vagrant/ansible"
+
+    pd.vm.provision "ansible_local" do |ansible|
+      ansible.install  = true
+      ansible.playbook = "/home/vagrant/ansible/playbook.yml"
+    end
+
+
+    pd.vm.provider :virtualbox do |vb|
+      vb.name = "ProductionVm"
+      vb.memory = "6000"
+      vb.cpus = 8
+    end
+  end
+
+end
+
+```
+
+The playbook performs the following tasks:
+
+1. Update the apt package index and upgrade all packages.
+2. Install Git.
+3. Install Java.
+4. Clone the repository.
+5. Install Docker using the official convenience script.
+
+```yaml
+- name: Provision VM
+  hosts: all
+  become: true
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+
+    - name: Install Java
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Install PAM packages for password policies
+      apt:
+        name:
+          - libpam-pwquality
+          - libpam-modules
+        state: present
+
+    #- name: Docker Installation
+    # apt:
+    #   name:
+    #      - docker-ce
+    ##     - docker-ce-cli
+    #     - containerd.io
+    #     - docker-buildx-plugin
+    #     - docker-compose-plugin
+    #   state: present
+
+    - name: Clone the repository
+      git:
+        repo: https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git
+        dest: /home/vagrant/masters/cogsi_CA4_P1
+        version: main # Adjust branch if needed
+      become_user: vagrant # Run as vagrant user
+
+    - name: Install Docker using official convenience script
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+      args:
+        creates: /usr/bin/docker
+```
+
+7. Docker user group management.
+8. Login to Docker Hub.
+9. Pull the latest docker image.
+10. Run the application container.
+
+```yaml
+- name: Setup Docker Access
+  hosts: all
+  become: true # Need root permissions to modify users and groups
+
+  tasks:
+    - name: Ensure the remote user is in the 'docker' group
+      ansible.builtin.user:
+        name: '{{ ansible_user_id }}' # This variable holds the current remote connection user (e.g., 'vagrant')
+        groups: docker
+        append: true
+
+- name: Docker Registry Login
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Log into Docker Hub
+      community.docker.docker_login:
+        username: 'rafalu2225' #"{{ docker_registry_username }}"
+        password: 'dckr_pat_FYswjpK31VabEG7dYPMHLzkGbxQ'
+        state: present
+
+    - name: Pull the docker image from Docker Hub
+      community.docker.docker_image:
+        name: rafalu2225/cogsi_ca6
+        tag: latest
+        state: present
+        source: pull
+
+    - name: Run the Application Container
+      community.docker.docker_container:
+        name: ca6-web-app # Defina um nome para o container
+        image: rafalu2225/cogsi_ca6:latest-1
+        state: started
+        restart_policy: always # Garante que o container reinicie automaticamente
+        ports:
+          - '8080:8081' # Mapeia a porta 8080 do host para a porta 8080 do container
+```
+
+With this setup, the production VM will be automatically created and provisioned with Docker and the application will be deployed in a Docker container.
 
 ## Alternative solution
 

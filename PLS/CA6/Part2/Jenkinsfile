@@ -83,7 +83,7 @@ pipeline {
             steps {
                 echo "Deploying ${env.DOCKER_IMAGE_TAG} to production using Ansible..."
                 dir('PLS/CA6/Part2/VagrantFile/') { 
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/repo -w /repo/PLS/CA6/Part2/VagrantFile hashicorp/vagrant:latest vagrant up ProductionVm'
+                    sh "vagrant up ProductionVm"
                 }
             }
         }
