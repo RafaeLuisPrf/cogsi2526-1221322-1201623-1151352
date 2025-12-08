@@ -42,122 +42,47 @@
         version: main # Adjust branch if needed
       become_user: vagrant # Run as vagrant user
 
-- name: Create Groups and Users
+    - name: Install Docker using official convenience script
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+      args:
+        creates: /usr/bin/docker
+
+- name: Setup Docker Access
+  hosts: all
+  become: true # Need root permissions to modify users and groups
+
+  tasks:
+    - name: Ensure the remote user is in the 'docker' group
+      ansible.builtin.user:
+        name: '{{ ansible_user_id }}' # This variable holds the current remote connection user (e.g., 'vagrant')
+        groups: docker
+        append: true
+
+- name: Docker Registry Login
   hosts: all
   become: true
-  vars:
-    linux_group: 'developers'
-    linux_user: 'devuser'
+
   tasks:
-    - name: Create groups
-      group:
-        name: '{{ linux_group }}'
-        state: present
-    - name: Create users
-      user:
-        name: '{{ linux_user }}'
-        groups: '{{ linux_group }}'
+    - name: Log into Docker Hub
+      community.docker.docker_login:
+        username: 'rafalu2225' #"{{ docker_registry_username }}"
+        password: 'dckr_pat_FYswjpK31VabEG7dYPMHLzkGbxQ'
         state: present
 
-- name: Verify Web Status
-  hosts: webservers
-  become: true
-  tasks:
-    - name: Check if Web Server is running
-      ansible.builtin.uri:
-        url: 'http://localhost:8080'
-        return_content: yes
-        method: GET
-      register: web_status
-      ignore_errors: true
-      failed_when: web_status.status != 200
+    - name: Pull the docker image from Docker Hub
+      community.docker.docker_image:
+        name: rafalu2225/cogsi_ca6
+        tag: latest
+        state: present
+        source: pull
 
-    - name: Display Web Server status
-      debug:
-        msg: 'Web Server status is {{ web_status.status }}'
-
-- name: Manage PAM configuration on Linux systems
-  hosts: all
-  become: true
-  gather_facts: false
-
-  collections:
-    - community.general
-
-  tasks:
-    - name: Ensure pam_pwquality is configured with desired password policy
-      ansible.builtin.copy:
-        dest: /etc/security/pwquality.conf
-        owner: root
-        group: root
-        mode: '0644'
-        content: |
-          # Password quality requirements
-          minlen = 12
-          dcredit = -1       # one digit
-          ucredit = -1       # one uppercase letter
-          lcredit = -1       # one lowercase letter
-          ocredit = -1       # one special character
-          minclass = 4      # at least 4 character classes
-          dictcheck = 1     # enable dictionary check
-          retry = 3
-          maxrepeat = 5
-          usercheck = 1     # disallow passwords containing username
-
-    - name: Ensure pam_pwquality.so is used in PAM stack
-      community.general.pamd:
-        name: common-password
-        type: password
-        control: requisite
-        module_path: pam_pwquality.so
-        module_arguments:
-          - try_first_pass
-          - local_users_only
-          - retry=3
-          - authtok_type=
-        state: args_present
-
-    - name: Add password history to prevent reuse of last 5 passwords
-      community.general.pamd:
-        name: common-password
-        type: password
-        control: required
-        module_path: pam_pwhistory.so
-        module_arguments:
-          - remember=5
-          - use_authtok
-        state: args_present
-
-    - name: Add account locking on 5 failed logins for 10 minutes
-      community.general.pamd:
-        name: common-auth
-        type: auth
-        control: required
-        module_path: pam_faillock.so
-        module_arguments:
-          - preauth
-          - silent
-          - deny=5
-          - unlock_time=600
-        state: args_present
-
-    - name: Add account unlocking in account stack
-      community.general.pamd:
-        name: common-account
-        type: account
-        control: required
-        module_path: pam_faillock.so
-        module_arguments:
-          - no_log_info
-        state: args_present
-
-- name: WebServer Directory Only Access for 'developers' Group
-  hosts: webservers
-  become: true
-  tasks:
-    - name: Change file ownership, group and permissions
-      ansible.builtin.file:
-        path: /home/vagrant/masters/cogsi_CA4_P1/PLS/CA4/Part1/Web
-        owner: root
-        group: developers
-        mode: '0770'
+    - name: Run the Application Container
+      community.docker.docker_container:
+        name: ca6-web-app # Defina um nome para o container
+        image: rafalu2225/cogsi_ca6:latest-1
+        state: started
+        restart_policy: always # Garante que o container reinicie automaticamente
+        ports:
+          - '8080:8081' # Mapeia a porta 8080 do host para a porta 8080 do container

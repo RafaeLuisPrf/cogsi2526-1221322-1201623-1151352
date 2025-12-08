@@ -32,7 +32,7 @@
   - **Login to Docker Hub** (using credentials).
   - **Pull the latest Docker image** from Docker Hub.
   - **Stop and remove the old container** if it exists.
-  - **Run the new Docker container** successfully.
+  - **Run the new Docker container**  successfully.
 
 ---
 

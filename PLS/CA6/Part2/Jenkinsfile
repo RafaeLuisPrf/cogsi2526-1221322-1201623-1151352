@@ -1,13 +1,8 @@
 pipeline {
     agent any
 
-    // Define environment variables for registry and image name
     environment {
-        // Replace with your actual Docker Hub username or private registry prefix
-        DOCKER_REGISTRY = 'rafaeluise/my-app' 
-        
-        // Use JENKINS_URL and BUILD_NUMBER for a unique, traceable tag
-        IMAGE_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        DOCKER_IMAGE_TAG = 'rafalu2225/cogsi_ca6:latest'
     }
 
     stages {
@@ -15,8 +10,6 @@ pipeline {
         stage('Checkout') {
             steps {
               echo 'Pulling latest source code from repository...'
-              // Use the built-in SCM configuration to get the code
-              //git branch: 'CA6_P2', url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git'
               checkout scm
             }
         }
@@ -49,16 +42,8 @@ pipeline {
                 script {
                     def appDir = 'PLS/CA6/Part2/'
                     
-                    // 1. Build the Docker Image
-                    // Assumes the jar/war file is available in the 'build/libs' directory 
-                    // within the appDir (standard Gradle/Maven output)
-                    sh "docker build -t ${DOCKER_REGISTRY}:${IMAGE_TAG} ${appDir}"
-                    
-                    echo "Successfully built and tagged image: ${DOCKER_REGISTRY}:${IMAGE_TAG}"
-
-                    // 2. Add 'latest' tag for convenience (optional)
-                    sh "docker tag ${DOCKER_REGISTRY}:${IMAGE_TAG} ${DOCKER_REGISTRY}:latest"
-                    echo "Also tagged as: ${DOCKER_REGISTRY}:latest"
+                    sh "docker build -t ${env.DOCKER_IMAGE_TAG} ${appDir}"
+                    echo "Successfully built and tagged image: ${env.DOCKER_IMAGE_TAG}"
                 }
             }
         }
@@ -67,8 +52,7 @@ pipeline {
         stage('Archive') {
             steps {
                 echo "Archiving Dockerfile and build metadata..."
-                // Placeholder for archiving files:
-                // archiveArtifacts artifacts: 'Dockerfile, build-info.json', fingerprint: true
+                archiveArtifacts artifacts: 'Dockerfile', fingerprint: true
             }
         }
 
@@ -76,37 +60,17 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 echo "Pushing Docker image ${env.DOCKER_IMAGE_TAG} to Docker Hub..."
-                // Placeholder for Docker login and push using Jenkins Credentials
-                // withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                //     sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                //     sh "docker push ${env.DOCKER_IMAGE_TAG}"
-                // }
-            }
-        }
 
-        // The following stages handle deployment with manual confirmation
-
-        stage('Confirm Deploy to Staging') {
-            steps {
-                timeout(time: 60, unit: 'SECONDS') {
-                    input(message: 'Okay to Deploy to Staging?', ok: 'Let\'s Do it!')
-                }
-            }
-        }
-
-        // 7. Deploy – Use an Ansible playbook for the deployment of the latest Docker image (to Staging)
-        stage('Deploy to Staging') {
-            steps {
-                echo "Deploying ${env.DOCKER_IMAGE_TAG} to staging using Ansible..."
-                // Placeholder for Ansible execution:
-                // sh "ansible-playbook -i inventory/staging deploy.yml --extra-vars \"docker_image=${env.DOCKER_IMAGE_TAG}\""
-            }
-        }
-
-        stage('Confirm Deploy to Production') {
-            steps {
-                timeout(time: 60, unit: 'SECONDS') {
-                    input(message: 'Okay to Deploy to Production?', ok: 'Let\'s Do it!')
+                withCredentials(
+                    [usernamePassword
+                    (credentialsId: 'dockerhub-info',
+                     passwordVariable: 'DOCKER_PASSWORD',
+                      usernameVariable: 'DOCKER_USERNAME'
+                      )
+                    ]) 
+                {
+                    sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                    sh "docker push ${env.DOCKER_IMAGE_TAG}"
                 }
             }
         }
@@ -115,8 +79,10 @@ pipeline {
         stage('Deploy to Production') {
             steps {
                 echo "Deploying ${env.DOCKER_IMAGE_TAG} to production using Ansible..."
-                // Placeholder for Ansible execution:
-                // sh "ansible-playbook -i inventory/production deploy.yml --extra-vars \"docker_image=${env.DOCKER_IMAGE_TAG}\""
+                dir('PLS/CA6/Part2/VagrantFile/') { {
+                    sh 'chmod -x ./ansible/ansiblePass.txt'
+                    sh "vagrant up ProductionVm"
+                }
             }
         }
     }
@@ -129,4 +95,5 @@ pipeline {
             echo "❌ Pipeline failed at one or more stages!"
         }
     }
+}
 }
