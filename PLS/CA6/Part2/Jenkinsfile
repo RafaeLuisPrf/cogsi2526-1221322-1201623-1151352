@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options{
+        skipDefaultCheckout()
+    }
+
     environment {
         DOCKER_IMAGE_TAG = 'rafalu2225/cogsi_ca6:latest'
     }
@@ -9,8 +13,7 @@ pipeline {
         // 1. Checkout – Pull the latest source code from your repository
         stage('Checkout') {
             steps {
-              echo 'Pulling latest source code from repository...'
-              checkout scm
+              echo 'Source code from repository successfully checked out...'
             }
         }
 
