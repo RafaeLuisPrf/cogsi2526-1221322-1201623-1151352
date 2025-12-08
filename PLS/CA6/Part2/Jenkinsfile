@@ -79,7 +79,7 @@ pipeline {
         stage('Deploy to Production') {
             steps {
                 echo "Deploying ${env.DOCKER_IMAGE_TAG} to production using Ansible..."
-                dir('PLS/CA6/Part2/VagrantFile/') { {
+                dir('PLS/CA6/Part2/VagrantFile/') { 
                     sh 'chmod -x ./ansible/ansiblePass.txt'
                     sh "vagrant up ProductionVm"
                 }
@@ -95,5 +95,4 @@ pipeline {
             echo "❌ Pipeline failed at one or more stages!"
         }
     }
-}
 }
