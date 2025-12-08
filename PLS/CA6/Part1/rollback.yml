@@ -1,0 +1,45 @@
+- name: Rollback Green VM to previous stable version
+  hosts: green
+  become: yes
+  vars:
+    service_name: spring-app-green
+    stable_tag: "stable-v5" 
+    jenkins_url: "http://192.168.56.1:10000"
+    jenkins_user: "SantiagoAzevedo"
+    jenkins_token: "--- IGNORE ---" 
+    artifact_path: "/job/CA6-Part1/lastSuccessfulBuild/artifact/PLS/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
+    dest_jar: "/home/vagrant/app/repo/PLS/CA2/Part2/build/libs/Part2-0.0.1-SNAPSHOT.jar"
+
+  tasks:
+    - name: Stop Green service
+      systemd:
+        name: "{{ service_name }}"
+        state: stopped
+      ignore_errors: yes
+
+    - name: Download stable artifact from Jenkins
+      get_url:
+        url: "{{ jenkins_url }}{{ artifact_path }}"
+        dest: "{{ dest_jar }}"
+        url_username: "{{ jenkins_user }}"
+        url_password: "{{ jenkins_token }}"
+        force_basic_auth: yes
+        force: yes
+        mode: '0644'
+
+    - name: Restart Green service
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted
+        enabled: yes
+
+    - name: Health check - wait for app to respond
+      uri:
+        url: "http://localhost:8080/employees"
+        status_code: 200
+        timeout: 10
+        return_content: no
+      register: health
+      retries: 10
+      delay: 10
+      until: health.status == 200

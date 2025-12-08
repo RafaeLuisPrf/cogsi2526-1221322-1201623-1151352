@@ -1,0 +1,232 @@
+pipeline {
+    agent any
+    
+    environment {
+        GIT_TOKEN = credentials('git-token-credential-id')
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+        STABLE_TAG = "stable-v${env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code from repository...'
+                git branch: 'CA6_P1',
+                    url: 'https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git',
+                    credentialsId: 'git-token-credential-id'
+            }
+        }
+        
+        stage('Assemble') {
+            steps {
+                echo 'Compiling code and producing artifacts...'
+                dir('PLS/CA2/Part2') {
+                    script {
+                        if (isUnix()) {
+                            sh 'chmod +x gradlew'
+                            sh './gradlew clean assemble --no-daemon'
+                        } else {
+                            bat 'gradlew.bat clean assemble --no-daemon'
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Test') {
+        steps {
+            echo 'Running unit tests...'
+            dir('PLS/CA2/Part2') {
+                script {
+                    if (isUnix()) {
+                        sh './gradlew test --no-daemon'
+                    } else {
+                        bat 'gradlew.bat test --no-daemon'
+                    }
+                }
+            }
+        }
+        post {
+            always {
+                junit 'PLS/CA2/Part2/build/test-results/test/*.xml'
+                publishHTML(target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'PLS/CA2/Part2/build/reports/tests/test',
+                    reportFiles: 'index.html',
+                    reportName: 'Test Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Archive') {
+            steps {
+                echo 'Archiving artifacts...'
+                archiveArtifacts artifacts: 'PLS/CA2/Part2/build/libs/*.jar', 
+                                 fingerprint: true,
+                                 allowEmptyArchive: false
+            }
+        }
+        
+        stage('Tag Stable Build') {
+            steps {
+                echo "Tagging stable build as ${STABLE_TAG}..."
+                script {
+                    if (isUnix()) {
+                        sh """
+                            git config user.name "SantiagoAzevedo"
+                            git config user.email "1201623@isep.ipp.pt"
+                            git tag -a ${STABLE_TAG} -m "Stable build ${env.BUILD_NUMBER} - All tests passed"
+                            git push https://${GIT_TOKEN}@github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git ${STABLE_TAG}
+                        """
+                    } else {
+                        bat """
+                            git config user.name "SantiagoAzevedo"
+                            git config user.email "1201623@isep.ipp.pt"
+                            git tag -a ${STABLE_TAG} -m "Stable build ${env.BUILD_NUMBER} - All tests passed"
+                            git push https://%GIT_TOKEN%@github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git ${STABLE_TAG}
+                        """
+                    }
+                }
+                echo "Build tagged successfully as ${STABLE_TAG}"
+            }
+        }
+        
+        stage('Deploy to Production?') {
+            steps {
+                echo 'Requesting manual approval for production deployment...'
+                script {
+                    def userInput = input(
+                        id: 'deployApproval',
+                        message: 'Deploy to Production (Green VM)?',
+                        parameters: [
+                            choice(
+                                name: 'DEPLOY_DECISION',
+                                choices: ['No', 'Yes'],
+                                description: 'Do you approve the deployment to the Green VM?'
+                            )
+                        ]
+                    )
+                    
+                    if (userInput == 'No') {
+                        error('Deployment to production was rejected by user.')
+                    }
+                    
+                    echo "Deployment approved! Proceeding to Green VM..."
+                }
+            }
+        }
+
+        stage('WSL Check') {
+            steps {
+                bat "wsl -l -v"
+            }
+        }
+
+        stage('Prepare SSH Keys') {
+            steps {
+                echo 'Copying Vagrant SSH keys to WSL...'
+                script {
+                    bat """
+                        wsl bash -c "mkdir -p ~/.ssh && cp /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/.vagrant/machines/green/virtualbox/private_key ~/.ssh/green_key && chmod 600 ~/.ssh/green_key"
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps{
+                script {
+                    bat """
+                        wsl bash -c "ansible-playbook -i /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/inventoryWsl.ini /mnt/c/Users/Admin/Documents/COGSI/cogsi2526-1221322-1201623-1151352/PLS/CA6/Part1/playbook-deploy-green.yml --limit green --extra-vars 'git_token=${env.GIT_TOKEN}'"
+                    """
+                }
+            }
+        }
+
+        stage('Deployment Verification') {
+            steps {
+                echo 'Verifying deployment with health checks...'
+                script {
+                    def healthCheckPassed = false
+                    def maxRetries = 10
+                    def retryCount = 0
+                    
+                    while (!healthCheckPassed && retryCount < maxRetries) {
+                        retryCount++
+                        echo "Health check attempt ${retryCount}/${maxRetries}..."
+                        
+                        try {
+                            bat """
+                                wsl bash -c "curl -f -s http://192.168.56.11:8080 > /dev/null && echo 'Health check passed' || exit 1"
+                            """
+                            healthCheckPassed = true
+                            echo 'Application is responding correctly on Green VM!'
+                        } catch (Exception e) {
+                            if (retryCount < maxRetries) {
+                                echo "Health check failed, retrying in 10 seconds..."
+                                sleep(10)
+                            } else {
+                                error('Deployment verification failed: Application is not responding after ${maxRetries} attempts')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+    
+    post {
+        success {
+            script {
+                def message = """
+                PIPELINE EXECUTION SUCCESSFUL
+                Job Name    : ${env.JOB_NAME}
+                Build Number: #${env.BUILD_NUMBER}
+                Status      : SUCCESS
+                Tag         : ${STABLE_TAG}
+                Duration    : ${currentBuild.durationString}
+                
+                Deployment  : Application successfully deployed to Green VM
+                Health Check: PASSED - Application is responding correctly
+                """
+                echo message
+            }
+        }
+        failure {
+            script {
+                def message = """
+                PIPELINE EXECUTION FAILED
+                Job Name    : ${env.JOB_NAME}
+                Build Number: #${env.BUILD_NUMBER}
+                Status      : FAILURE
+                Duration    : ${currentBuild.durationString}
+                
+                Failed Stage: Check the logs above for details
+                Action      : Review the error logs and fix the issues
+                """
+                echo message
+            }
+        }
+        unstable {
+            script {
+                def message = """
+                PIPELINE EXECUTION UNSTABLE
+                Job Name    : ${env.JOB_NAME}
+                Build Number: #${env.BUILD_NUMBER}
+                Status      : UNSTABLE
+                Duration    : ${currentBuild.durationString}
+                
+                Warning     : Build completed with warnings or test failures
+                """
+                echo message
+            }
+        }
+        always {
+            echo 'Pipeline execution completed.'
+        }
+    }
+}

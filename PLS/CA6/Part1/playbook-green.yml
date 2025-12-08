@@ -1,0 +1,59 @@
+---
+- name: Set global variables
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set facts for all hosts
+      set_fact:
+        app_user: vagrant
+        app_dir: /home/vagrant/app
+        h2_data_dir: /home/vagrant/h2-data
+        git_repo: "https://github.com/RafaeLuisPrf/cogsi2526-1221322-1201623-1151352.git"
+        app_path: "PLS/CA2/Part2"
+
+- name: Provision Green VM
+  hosts: green
+  become: yes
+  tasks:
+    - name: Wait for dpkg lock
+      shell: |
+        while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+          echo "Waiting for dpkg lock..."
+          sleep 5
+        done
+      become: yes
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install JDK and JRE
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - openjdk-17-jdk
+        - openjdk-17-jre
+
+    - name: Install Netcat
+      apt:
+        name: netcat
+        state: present
+
+    - name: Create H2 data directory
+      file:
+        path: "{{ h2_data_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0775'
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
