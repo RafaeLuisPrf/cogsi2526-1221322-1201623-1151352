@@ -1045,7 +1045,14 @@ The playbook performs the following tasks:
 With this setup, the production VM will be automatically created and provisioned with Docker and the application will be deployed in a Docker container.
 
 ## Alternative solution
+There are many Continuous Integration and Continuous Delivery (CI/CD) tools available today.
+Some open-source and others proprietary.
+Jenkins is one of the most popular Open-Source solutions given that it was released in 2004 and can be set up on any machine given that it is based on Java.
+Throughout the years the market has been shifting to could-native solutions given their easy-to-setup features and scalibility.
+In this realm, we see two diferent aproaches which are the use of multiple services from different vendors or single vendor solutions.
 
+In the context of multiple vendors, we normally see the use of platforms like Gitlab and Bitbucket for Continuous Integration and tools like Sprinkler or Octopus Deploy for Continuous Delievery.
+In the context of single vendor solutions, platforms like CircleCI have been rising in popularity given that they are hosted on the provider infrastructure which focuses the team on building the appropriate tests and deploying instead of beign responsible for setting up their infrastructure.
 ### 1.1 - Requirements
 
 ### 1.2 - Analysis
