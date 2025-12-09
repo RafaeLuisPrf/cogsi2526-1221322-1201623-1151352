@@ -4,9 +4,9 @@
 
 # TODO
 
-Santiago -
-Rafael -
-Joao -
+Santiago - 33.3 %
+Rafael - 33.3 %
+Joao - 33.3 %
 
 ## Part 1
 
